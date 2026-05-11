@@ -73,7 +73,7 @@ def print_summary(results):
         print(f"{pipeline_name:<15} {status:<10} {points_str:<12} {duration:<12.2f}s {file_size_str:<15}")
     
     print("-" * 80)
-    print(f"{'TOTAL':<15} {'':<10} {total_points:,.<12} {total_duration:<12.2f}s")
+    print(f"{'TOTAL':<15} {'':<10} {total_points:<12,} {total_duration:<12.2f}s")
     print("=" * 80)
     
     return all_success, total_points, total_duration

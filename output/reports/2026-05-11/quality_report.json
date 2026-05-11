@@ -1,0 +1,77 @@
+{
+  "generated_at": "2026-05-11T20:24:46.456909",
+  "date": "2026-05-11",
+  "pipelines": {
+    "sst": {
+      "total_points": 317063,
+      "mean_sst_celsius": 13.3469,
+      "min_sst_celsius": -1.8,
+      "max_sst_celsius": 32.49,
+      "std_dev_celsius": 12.6294,
+      "flagged_count": 0,
+      "flagged_pct": 0.0,
+      "by_latitude_band": {
+        "polar_gt60": {
+          "count": 107771,
+          "mean_sst": -0.7388
+        },
+        "temperate_30_60": {
+          "count": 86389,
+          "mean_sst": 11.209
+        },
+        "tropical_0_30": {
+          "count": 122903,
+          "mean_sst": 27.201
+        }
+      },
+      "northern_hemisphere_mean": 13.3469,
+      "southern_hemisphere_mean": 0.0
+    },
+    "currents": {
+      "total_points": 300,
+      "mean_speed_ms": 0.2455,
+      "max_speed_ms": 0.4996,
+      "min_speed_ms": 0.0129,
+      "max_speed_location": {
+        "lat": 16.36,
+        "lon": 0.5
+      },
+      "high_energy_count": 0,
+      "high_energy_pct": 0.0,
+      "compass_rose_pct": {
+        "N": 16.33,
+        "NE": 11.0,
+        "E": 10.67,
+        "SE": 14.33,
+        "S": 12.0,
+        "SW": 12.33,
+        "W": 11.0,
+        "NW": 12.33
+      }
+    },
+    "tides": {
+      "total_stations": 50,
+      "valid_stations": 49,
+      "error_stations": 1,
+      "mean_tidal_range_m": 0.371,
+      "max_tidal_range_m": 0.95,
+      "min_tidal_range_m": 0.12,
+      "max_range_station": "SUVA HARBOR, Viti Levu Island",
+      "mean_high_tide_m": 0.5592,
+      "mean_low_tide_m": 0.1882
+    },
+    "ww3": {
+      "total_points": 500,
+      "mean_swh_m": 4.3172,
+      "max_swh_m": 8.0,
+      "min_swh_m": 0.5,
+      "wave_categories": {
+        "calm_lt1m": 31,
+        "moderate_1_3m": 126,
+        "rough_3_6m": 205,
+        "extreme_gt6m": 138
+      },
+      "dominant_direction": "S"
+    }
+  }
+}

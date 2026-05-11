@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CUMULUS Map Viewer</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+html, body {
+  margin: 0; padding: 0;
+  height: 100%; overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #0d1117; color: #e2e8f0;
+}
+body { display: flex; flex-direction: column; }
+
+/* Header */
+header {
+  flex-shrink: 0;
+  background: #161b22;
+  border-bottom: 1px solid #21262d;
+  padding: 0 16px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  z-index: 1000;
+}
+.brand {
+  display: flex; align-items: center; gap: 8px;
+  flex-shrink: 0;
+}
+.brand-logo {
+  width: 26px; height: 26px; background: #1d4ed8;
+  border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+}
+.brand-text strong {
+  display: block; font-size: 12px; font-weight: 700;
+  color: #f0f6fc; letter-spacing: .5px;
+}
+.brand-text small {
+  display: block; font-size: 9px; color: #484f58; letter-spacing: .5px;
+}
+.sep { width: 1px; height: 22px; background: #21262d; flex-shrink: 0; }
+.toggles { display: flex; gap: 5px; }
+.toggle-btn {
+  padding: 5px 12px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 10px; font-weight: 700;
+  letter-spacing: .6px; text-transform: uppercase;
+  font-family: inherit;
+  transition: opacity .15s;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.toggle-btn .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor; opacity: .7;
+}
+.toggle-btn.active { opacity: 1; }
+.toggle-btn:not(.active) { opacity: .38; }
+#btn-sst      { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+#btn-currents { background: #059669; border-color: #059669; color: #fff; }
+#btn-tides    { background: #b45309; border-color: #b45309; color: #fff; }
+#btn-ww3      { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+#status {
+  margin-left: auto; font-size: 10px; color: #484f58;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: .3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+/* Map fills all remaining space — min-height:0 is the critical fix */
+#map { flex: 1; min-height: 0; }
+
+/* Legend — fixed to viewport bottom-right */
+#legend {
+  position: fixed; bottom: 24px; right: 14px; z-index: 1000;
+  background: rgba(13,17,23,.96); border: 1px solid #21262d;
+  padding: 10px 14px; min-width: 155px;
+  font-size: 11px; color: #c9d1d9; display: none;
+}
+#legend-title {
+  font-size: 9px; font-weight: 700; color: #58a6ff;
+  text-transform: uppercase; letter-spacing: .9px; margin-bottom: 8px;
+}
+.legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* Leaflet popup override */
+.leaflet-popup-content-wrapper {
+  background: #161b22; color: #c9d1d9;
+  border: 1px solid #30363d; border-radius: 3px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.6);
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+}
+.leaflet-popup-tip { background: #161b22; }
+.leaflet-popup-content b { color: #58a6ff; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-logo">
+      <svg width="15" height="15" viewBox="0 0 18 18" fill="none">
+        <rect x="1" y="11" width="3" height="6" rx="1" fill="#60a5fa"/>
+        <rect x="6" y="7"  width="3" height="10" rx="1" fill="#60a5fa"/>
+        <rect x="11" y="3" width="3" height="14" rx="1" fill="#60a5fa"/>
+      </svg>
+    </div>
+    <div class="brand-text">
+      <strong>CUMULUS</strong>
+      <small>MAP VIEWER</small>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <div class="toggles">
+    <button class="toggle-btn" id="btn-sst"      onclick="toggleLayer('sst')">
+      <span class="dot"></span>SST
+    </button>
+    <button class="toggle-btn" id="btn-currents"  onclick="toggleLayer('currents')">
+      <span class="dot"></span>Currents
+    </button>
+    <button class="toggle-btn" id="btn-tides"     onclick="toggleLayer('tides')">
+      <span class="dot"></span>Tides
+    </button>
+    <button class="toggle-btn" id="btn-ww3"       onclick="toggleLayer('ww3')">
+      <span class="dot"></span>WW3 Waves
+    </button>
+  </div>
+
+  <span id="status">Select a layer to load</span>
+</header>
+
+<div id="map"></div>
+
+<div id="legend">
+  <div id="legend-title">Legend</div>
+  <div id="legend-items"></div>
+</div>
+
+<script>
+// ============================================================
+// Map init — invalidateSize after first paint fixes half-render
+// ============================================================
+const map = L.map('map', {
+  center: [20, 0], zoom: 2,
+  zoomControl: true,
+  preferCanvas: true,   // all vector layers use canvas by default
+});
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OpenStreetMap &copy; CARTO',
+  subdomains: 'abcd', maxZoom: 19,
+}).addTo(map);
+
+// Double-RAF then a 200 ms timeout — handles flex/CSS layout settling
+requestAnimationFrame(() => requestAnimationFrame(() => {
+  map.invalidateSize();
+  setTimeout(() => map.invalidateSize(), 200);
+}));
+window.addEventListener('resize', () => map.invalidateSize());
+
+const layerGroups = {
+  sst:      L.layerGroup(),
+  currents: L.layerGroup(),
+  tides:    L.layerGroup(),
+  ww3:      L.layerGroup(),
+};
+const loaded = { sst: false, currents: false, tides: false, ww3: false };
+const active = { sst: false, currents: false, tides: false, ww3: false };
+
+function setStatus(msg) {
+  document.getElementById('status').textContent = msg;
+}
+
+// ============================================================
+// Color helpers
+// ============================================================
+function sstColor(val) {
+  const steps = [
+    [0,  [59,130,246]],
+    [10, [34,211,238]],
+    [20, [74,222,128]],
+    [28, [251,191,36]],
+    [35, [239,68,68]],
+  ];
+  val = Math.max(0, Math.min(35, val));
+  for (let i = 0; i < steps.length - 1; i++) {
+    const [av, ac] = steps[i];
+    const [bv, bc] = steps[i + 1];
+    if (val >= av && val <= bv) {
+      const t = (val - av) / (bv - av);
+      return `rgb(${Math.round(ac[0]+t*(bc[0]-ac[0]))},${Math.round(ac[1]+t*(bc[1]-ac[1]))},${Math.round(ac[2]+t*(bc[2]-ac[2]))})`;
+    }
+  }
+  return '#ef4444';
+}
+
+function ww3Color(swh) {
+  if (swh < 1) return '#93c5fd';
+  if (swh < 3) return '#3b82f6';
+  if (swh < 6) return '#1d4ed8';
+  return '#7c3aed';
+}
+
+function currentColor(speed) {
+  if (speed < 0.1) return '#6ee7b7';
+  if (speed < 0.3) return '#10b981';
+  if (speed < 0.5) return '#059669';
+  return '#065f46';
+}
+
+// ============================================================
+// Renderers — all use L.geoJSON + canvas renderer
+// L.geoJSON batches feature creation; canvas renderer keeps
+// all circles on one <canvas> instead of hundreds of SVG nodes
+// ============================================================
+
+function renderSst(geojson) {
+  layerGroups.sst.clearLayers();
+  L.geoJSON(geojson, {
+    pointToLayer(f, latlng) {
+      return L.circleMarker(latlng, {
+        radius: 4,
+        color: 'none',
+        fillColor: sstColor(f.properties.sst_celsius ?? 15),
+        fillOpacity: 0.85,
+      });
+    },
+    onEachFeature(f, layer) {
+      const p = f.properties;
+      layer.bindPopup(
+        `<b>Sea Surface Temp</b><br>` +
+        `${p.sst_celsius.toFixed(2)} °C<br>` +
+        `${f.geometry.coordinates[1].toFixed(2)}° N, ${f.geometry.coordinates[0].toFixed(2)}° E`,
+        { maxWidth: 180 }
+      );
+    },
+  }).addTo(layerGroups.sst);
+
+  showLegend('sst', [
+    { color:'#3b82f6', label:'Cold  0°C' },
+    { color:'#22d3ee', label:'Cool 10°C' },
+    { color:'#4ade80', label:'Mild 20°C' },
+    { color:'#fbbf24', label:'Warm 28°C' },
+    { color:'#ef4444', label:'Hot  35°C' },
+  ]);
+}
+
+function renderCurrents(geojson) {
+  layerGroups.currents.clearLayers();
+  L.geoJSON(geojson, {
+    pointToLayer(f, latlng) {
+      const p = f.properties;
+      const spd = p.speed_ms ?? 0;
+      const radius = Math.max(2, Math.min(8, spd * 14));
+      return L.circleMarker(latlng, {
+        radius,
+        color: currentColor(spd),
+        fillColor: currentColor(spd),
+        fillOpacity: 0.75,
+        weight: 1,
+      });
+    },
+    onEachFeature(f, layer) {
+      const p = f.properties;
+      layer.bindPopup(
+        `<b>Ocean Current</b><br>` +
+        `Speed: ${p.speed_ms} m/s<br>` +
+        `Direction: ${p.direction_deg}°<br>` +
+        `U: ${p.u_ms} · V: ${p.v_ms}`,
+        { maxWidth: 180 }
+      );
+    },
+  }).addTo(layerGroups.currents);
+
+  showLegend('currents', [
+    { color:'#6ee7b7', label:'< 0.1 m/s' },
+    { color:'#10b981', label:'0.1 – 0.3 m/s' },
+    { color:'#059669', label:'0.3 – 0.5 m/s' },
+    { color:'#065f46', label:'> 0.5 m/s' },
+  ]);
+}
+
+function renderTides(geojson) {
+  layerGroups.tides.clearLayers();
+  L.geoJSON(geojson, {
+    pointToLayer(f, latlng) {
+      return L.circleMarker(latlng, {
+        radius: 6,
+        color: '#d97706',
+        fillColor: '#fbbf24',
+        fillOpacity: 0.9,
+        weight: 1.5,
+      });
+    },
+    onEachFeature(f, layer) {
+      const p = f.properties;
+      layer.bindPopup(
+        `<b>${p.name}</b><br>` +
+        `Station: ${p.station_id}<br>` +
+        `High: ${p.next_high_time} · ${p.next_high_m} m<br>` +
+        `Low:  ${p.next_low_time} · ${p.next_low_m} m`,
+        { maxWidth: 200 }
+      );
+    },
+  }).addTo(layerGroups.tides);
+
+  showLegend('tides', [
+    { color:'#fbbf24', label:'Tide station — click for details' },
+  ]);
+}
+
+function renderWw3(geojson) {
+  layerGroups.ww3.clearLayers();
+  L.geoJSON(geojson, {
+    pointToLayer(f, latlng) {
+      const swh = f.properties.swh_m ?? 1;
+      const radius = Math.max(2, Math.min(12, swh * 1.6));
+      return L.circleMarker(latlng, {
+        radius,
+        color: 'none',
+        fillColor: ww3Color(swh),
+        fillOpacity: 0.72,
+      });
+    },
+    onEachFeature(f, layer) {
+      const p = f.properties;
+      layer.bindPopup(
+        `<b>Wave Height</b>: ${p.swh_m} m<br>` +
+        `Direction: ${p.mwd_deg}°<br>` +
+        `${f.geometry.coordinates[1].toFixed(2)}° N, ${f.geometry.coordinates[0].toFixed(2)}° E`,
+        { maxWidth: 180 }
+      );
+    },
+  }).addTo(layerGroups.ww3);
+
+  showLegend('ww3', [
+    { color:'#93c5fd', label:'Calm   < 1 m' },
+    { color:'#3b82f6', label:'Moderate 1–3 m' },
+    { color:'#1d4ed8', label:'Rough  3–6 m' },
+    { color:'#7c3aed', label:'Extreme > 6 m' },
+  ]);
+}
+
+const renderers = { sst: renderSst, currents: renderCurrents, tides: renderTides, ww3: renderWw3 };
+
+// ============================================================
+// Layer toggle
+// ============================================================
+async function toggleLayer(name) {
+  const btn = document.getElementById('btn-' + name);
+
+  if (active[name]) {
+    if (map.hasLayer(layerGroups[name])) map.removeLayer(layerGroups[name]);
+    active[name] = false;
+    btn.classList.remove('active');
+    hideLegend();
+    setStatus('Layer hidden');
+    return;
+  }
+
+  active[name] = true;
+  btn.classList.add('active');
+  if (!map.hasLayer(layerGroups[name])) layerGroups[name].addTo(map);
+
+  if (!loaded[name]) {
+    setStatus(`Fetching ${name.toUpperCase()}…`);
+    try {
+      const resp = await fetch(`/api/geojson/${name}`);
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${resp.status}`);
+      }
+      const geojson = await resp.json();
+      const count = geojson.features?.length ?? 0;
+      if (count === 0) throw new Error('No features in response — run the pipeline first');
+      setStatus(`Rendering ${count} features…`);
+      await new Promise(ok => setTimeout(ok, 0));   // let status paint
+      renderers[name](geojson);
+      loaded[name] = true;
+      setStatus(`${name.toUpperCase()} · ${count} features`);
+    } catch (err) {
+      setStatus(`${name.toUpperCase()}: ${err.message}`);
+      active[name] = false;
+      btn.classList.remove('active');
+      if (map.hasLayer(layerGroups[name])) map.removeLayer(layerGroups[name]);
+    }
+  } else {
+    setStatus(`${name.toUpperCase()} visible`);
+  }
+}
+
+// ============================================================
+// Legend
+// ============================================================
+function showLegend(name, items) {
+  const titles = {
+    sst: 'Sea Surface Temp',
+    currents: 'Ocean Currents',
+    tides: 'Tide Stations',
+    ww3: 'Wave Height',
+  };
+  document.getElementById('legend-title').textContent = titles[name] || name;
+  document.getElementById('legend-items').innerHTML = items
+    .map(i => `<div class="legend-item"><div class="legend-dot" style="background:${i.color}"></div><span>${i.label}</span></div>`)
+    .join('');
+  document.getElementById('legend').style.display = 'block';
+}
+
+function hideLegend() {
+  document.getElementById('legend').style.display = 'none';
+}
+</script>
+</body>
+</html>

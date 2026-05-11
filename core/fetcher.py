@@ -59,8 +59,6 @@ def download_file(url: str, dest_path: str) -> bool:
         except Exception as e:
             logger.log_error(f"Unexpected error downloading file: {str(e)}")
             return False
-    
-    return False
 
 
 def fetch_json(url: str) -> dict:
@@ -102,5 +100,3 @@ def fetch_json(url: str) -> dict:
         except Exception as e:
             logger.log_error(f"Unexpected error fetching JSON: {str(e)}")
             return {}
-    
-    return {}

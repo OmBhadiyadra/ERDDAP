@@ -24,7 +24,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from config import WW3_BASE_URL
+from config import WW3_BASE_URL, OUTPUT_DIR
 from core.logger import PipelineLogger
 from core.fetcher import download_file, fetch_json
 from core.compressor import compress_json, compress_geojson
@@ -54,21 +54,23 @@ def generate_synthetic_ww3_data(num_points: int = 500) -> list:
     lons = np.linspace(-180, 180, 25)
     
     for lat in lats:
+        if len(records) >= num_points:
+            break
         for lon in lons:
             if len(records) >= num_points:
                 break
-            
+
             # Realistic wave heights (0.5 - 8 meters)
             swh = np.random.uniform(0.5, 8.0)
-            
+
             # Realistic wave directions (0-360 degrees)
             mwd = np.random.uniform(0, 360)
-            
+
             # Compute U/V components
             mwd_rad = math.radians(mwd)
             u = swh * math.sin(mwd_rad)
             v = swh * math.cos(mwd_rad)
-            
+
             records.append({
                 'lat': round(lat, 2),
                 'lon': round(lon, 2),
@@ -177,16 +179,15 @@ def fetch_ww3_data() -> list:
             # Download to temp file
             with NamedTemporaryFile(suffix='.grib2', delete=False) as tmp:
                 tmp_path = tmp.name
-            
-            if download_file(url, tmp_path):
-                # Try to parse GRIB2
-                data = parse_grib2_data(tmp_path)
-                
+
+            try:
+                if download_file(url, tmp_path):
+                    data = parse_grib2_data(tmp_path)
+                    if data:
+                        logger.log_info(f"Successfully fetched WW3 data from {date_str}/{hour_str}")
+                        return data
+            finally:
                 Path(tmp_path).unlink(missing_ok=True)
-                
-                if data:
-                    logger.log_info(f"Successfully fetched WW3 data from {date_str}/{hour_str}")
-                    return data
         
         logger.log_warning("Could not fetch real WW3 data, falling back to synthetic data")
         return generate_synthetic_ww3_data()
@@ -265,7 +266,7 @@ def run_ww3_pipeline() -> dict:
         
         # Create output directory with date
         today = datetime.utcnow().strftime("%Y-%m-%d")
-        output_dir = Path("output/ww3_temp") / today
+        output_dir = OUTPUT_DIR / "ww3_temp" / today
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Compress JSON

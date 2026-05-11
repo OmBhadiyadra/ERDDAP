@@ -23,8 +23,8 @@ import time
 import math
 import numpy as np
 from datetime import datetime
-from pathlib import Path
 
+from config import OUTPUT_DIR
 from core.logger import PipelineLogger
 from core.fetcher import fetch_json
 from core.compressor import compress_json, compress_geojson
@@ -54,23 +54,25 @@ def generate_synthetic_currents_data(num_points: int = 300) -> list:
     lons = np.linspace(-179, 180, 25)
     
     for lat in lats:
+        if len(records) >= num_points:
+            break
         for lon in lons:
             if len(records) >= num_points:
                 break
-            
+
             # Realistic current velocities (0.01 - 0.5 m/s)
             speed = np.random.uniform(0.01, 0.5)
             direction_rad = np.random.uniform(0, 2 * math.pi)
-            
+
             u = speed * math.cos(direction_rad)
             v = speed * math.sin(direction_rad)
-            
+
             # Compute derived values
             computed_speed = math.sqrt(u**2 + v**2)
             computed_direction = math.degrees(math.atan2(u, v))
             if computed_direction < 0:
                 computed_direction += 360
-            
+
             records.append({
                 'lat': round(lat, 2),
                 'lon': round(lon, 2),
@@ -258,7 +260,7 @@ def run_currents_pipeline() -> dict:
         
         # Create output directory with date
         today = datetime.utcnow().strftime("%Y-%m-%d")
-        output_dir = Path("output/currents_temp") / today
+        output_dir = OUTPUT_DIR / "currents_temp" / today
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Compress JSON

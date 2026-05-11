@@ -6,7 +6,6 @@ import shutil
 from pathlib import Path
 from config import S3_SIMULATED_DIR, STORAGE_MODE, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, S3_BUCKET
 from core.logger import PipelineLogger
-import boto3
 
 logger = PipelineLogger(__name__)
 
@@ -59,10 +58,12 @@ def _save_to_local_s3_impl(local_path: str, s3_key: str) -> bool:
 def _save_to_aws_s3(local_path: str, s3_key: str) -> bool:
     """Save to real AWS S3 (requires credentials)."""
     try:
+        import boto3
+
         if not AWS_ACCESS_KEY_ID or not AWS_SECRET_ACCESS_KEY:
             logger.log_error("AWS credentials not configured for S3 upload")
             return False
-        
+
         s3_client = boto3.client(
             's3',
             aws_access_key_id=AWS_ACCESS_KEY_ID,

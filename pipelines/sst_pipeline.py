@@ -21,8 +21,8 @@ import time
 import math
 import numpy as np
 from datetime import datetime
-from pathlib import Path
 
+from config import OUTPUT_DIR
 from core.logger import PipelineLogger
 from core.fetcher import fetch_json
 from core.compressor import compress_json, compress_geojson
@@ -52,10 +52,12 @@ def generate_synthetic_sst_data(num_points: int = 300) -> list:
     lons = np.linspace(-179, 180, 20)
     
     for lat in lats:
+        if len(records) >= num_points:
+            break
         for lon in lons:
             if len(records) >= num_points:
                 break
-            
+
             # Realistic SST values (5-30°C in tropics/subtropics)
             # Varies by latitude
             if lat > 60:
@@ -64,7 +66,7 @@ def generate_synthetic_sst_data(num_points: int = 300) -> list:
                 sst = np.random.uniform(10, 25)
             else:
                 sst = np.random.uniform(20, 30)
-            
+
             records.append({
                 'lat': round(lat, 2),
                 'lon': round(lon, 2),
@@ -118,7 +120,7 @@ def parse_erddap_sst_response(data: dict) -> list:
                 sst = float(row[4])
                 
                 # Check for fill values and suspicious values
-                if sst is None or math.isnan(sst):
+                if math.isnan(sst):
                     continue
                 
                 # Flag suspicious values but include them
@@ -245,7 +247,7 @@ def run_sst_pipeline() -> dict:
         
         # Create output directory with date
         today = datetime.utcnow().strftime("%Y-%m-%d")
-        output_dir = Path("output/sst_temp") / today
+        output_dir = OUTPUT_DIR / "sst_temp" / today
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Compress JSON

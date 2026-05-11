@@ -23,8 +23,8 @@ Extension from EGR 500 Internship:
 
 import time
 from datetime import datetime
-from pathlib import Path
 
+from config import OUTPUT_DIR
 from core.logger import PipelineLogger
 from core.fetcher import fetch_json
 from core.compressor import compress_json, compress_geojson
@@ -302,7 +302,7 @@ def run_tides_pipeline() -> dict:
         
         # Create output directory with date
         today = datetime.utcnow().strftime("%Y-%m-%d")
-        output_dir = Path("output/tides_temp") / today
+        output_dir = OUTPUT_DIR / "tides_temp" / today
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Compress JSON
