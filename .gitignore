@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Database
+output/rds.db
+output/rds.db-wal
+output/rds.db-shm
+
+# Logs
+output/logs/*.log
+output/*_temp/
+
+# Temporary files
+*.tmp
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Flask
+instance/
+.webassets-cache
+
+# IDE
+*.sublime-project
+*.sublime-workspace
