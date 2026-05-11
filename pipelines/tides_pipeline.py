@@ -160,11 +160,10 @@ def fetch_tide_predictions(station_id: str, station_name: str, station_lat: floa
         high_times = [p for p in predictions if p.get('type') == 'H']
         low_times = [p for p in predictions if p.get('type') == 'L']
         
-        next_high_time = high_times[0]['time'].split()[-1] if high_times else "N/A"
-        next_high_m = float(high_times[0]['predictions'][0]) if high_times else 0
-        
-        next_low_time = low_times[0]['time'].split()[-1] if low_times else "N/A"
-        next_low_m = float(low_times[0]['predictions'][0]) if low_times else 0
+        next_high_time = high_times[0]['t'].split()[-1] if high_times else "N/A"
+        next_low_time  = low_times[0]['t'].split()[-1]  if low_times  else "N/A"
+        next_high_m    = float(high_times[0]['v'])       if high_times else 0.0
+        next_low_m     = float(low_times[0]['v'])        if low_times  else 0.0
         
         return {
             "station_id": station_id,

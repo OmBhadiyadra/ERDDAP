@@ -164,7 +164,7 @@ def fetch_currents_data() -> list:
     """
     try:
         # ERDDAP endpoint for OSCAR currents
-        url = "https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplOscar_LonPM180.json?u[(last)][(0.0)][(0.0):(60.0)][(-179.0):(180.0)],v[(last)][(0.0)][(0.0):(60.0)][(-179.0):(180.0)]"
+        url = "https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplOscar3rdParty_LonPM180.json?u[(last)][(0.0)][(0.0):(60.0)][(-179.0):(180.0)],v[(last)][(0.0)][(0.0):(60.0)][(-179.0):(180.0)]"
         
         logger.log_info(f"Fetching ocean current data from ERDDAP OSCAR")
         

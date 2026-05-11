@@ -58,3 +58,14 @@ instance/
 # IDE
 *.sublime-project
 *.sublime-workspace
+pipelines/tides_pipeline.py
+output/s3/currents/2026-05-11/currents_global.geojson.gz
+output/s3/currents/2026-05-11/currents_global.json.gz
+output/s3/sst/2026-05-11/sst_global.geojson.gz
+output/s3/sst/2026-05-11/sst_global.json.gz
+output/s3/tides/2026-05-11/tides_coops.geojson.gz
+output/s3/tides/2026-05-11/tides_coops.json.gz
+output/s3/ww3/2026-05-11/f006.geojson.gz
+output/s3/ww3/2026-05-11/f006.geojson.gz
+output/s3/ww3/2026-05-11/f006.json.gz
+output/s3/ww3/2026-05-11/f006.geojson.gz
